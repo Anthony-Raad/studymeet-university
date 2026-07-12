@@ -1,0 +1,13 @@
+# secrets, never commit the real one
+.env
+
+# installed packages, these get put back with "npm install"
+node_modules/
+
+# expo build stuff
+client/.expo/
+client/dist/
+client/web-build/
+
+# mac junk file
+.DS_Store

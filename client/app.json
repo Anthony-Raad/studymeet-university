@@ -1,0 +1,10 @@
+{
+  "expo": {
+    "name": "StudyMeet",
+    "slug": "studymeet-university",
+    "version": "1.0.0",
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
