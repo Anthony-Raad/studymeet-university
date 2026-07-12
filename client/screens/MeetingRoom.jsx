@@ -24,7 +24,6 @@ function CircleButton(props) {
 
 function PeerTile(props) {
   const peer = props.peer;
-  const large = props.large;
   const videoRef = useRef(null);
 
   useEffect(function () {
@@ -37,7 +36,7 @@ function PeerTile(props) {
   const hasVideo = Boolean(peer.stream) && peer.stream.getVideoTracks().length > 0;
 
   return (
-    <View style={[tileStyle.wrap, large && tileStyle.wrapLarge]}>
+    <View style={tileStyle.wrap}>
       {hasVideo ? (
         <video
           ref={videoRef}
@@ -66,9 +65,52 @@ function PeerTile(props) {
   );
 }
 
+function SelfTile(props) {
+  const videoRef = props.videoRef;
+  const cameraOn = props.cameraOn;
+  const name = props.name;
+  const handRaised = props.handRaised;
+
+  return (
+    <View style={tileStyle.wrap}>
+      {cameraOn ? (
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            borderRadius: 14,
+            display: "block",
+            transform: "scaleX(-1)",
+          }}
+        />
+      ) : (
+        <View style={[tileStyle.fill, tileStyle.center]}>
+          <View style={tileStyle.avatar}>
+            <Text style={tileStyle.avatarText}>{initials(name)}</Text>
+          </View>
+        </View>
+      )}
+      {handRaised && (
+        <View style={tileStyle.handBadge}>
+          <Text style={tileStyle.handBadgeText}>✋</Text>
+        </View>
+      )}
+      <View style={tileStyle.nameTag}>
+        <Text style={tileStyle.nameTagText} numberOfLines={1}>
+          {name} (you)
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 const tileStyle = StyleSheet.create({
-  wrap: { borderRadius: 14, overflow: "hidden", backgroundColor: "#241B45", borderWidth: 2, borderColor: "transparent" },
-  wrapLarge: { flex: 1 },
+  wrap: { width: "100%", height: "100%", borderRadius: 14, overflow: "hidden", backgroundColor: "#241B45", borderWidth: 2, borderColor: "transparent" },
   fill: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
   center: { alignItems: "center", justifyContent: "center" },
   avatar: { width: 64, height: 64, borderRadius: 32, backgroundColor: COLORS.primary, alignItems: "center", justifyContent: "center" },
@@ -78,6 +120,29 @@ const tileStyle = StyleSheet.create({
   nameTag: { position: "absolute", left: 8, bottom: 8, backgroundColor: "rgba(0,0,0,0.55)", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
   nameTagText: { color: "#fff", fontSize: 11, fontWeight: "600" },
 });
+
+function gridColumnCount(totalPeople, isMobile) {
+  if (isMobile) {
+    if (totalPeople <= 1) {
+      return 1;
+    }
+    return 2;
+  }
+
+  if (totalPeople <= 1) {
+    return 1;
+  }
+  if (totalPeople <= 4) {
+    return 2;
+  }
+  if (totalPeople <= 9) {
+    return 3;
+  }
+  if (totalPeople <= 16) {
+    return 4;
+  }
+  return 5;
+}
 
 export default function MeetingRoom(props) {
   const meetingCode = props.meetingCode;
@@ -566,8 +631,14 @@ export default function MeetingRoom(props) {
   const anyScreenShare = sharingScreen || Boolean(sharerPeer && sharerPeer.stream);
 
   const roomStyle = isMobile
-    ? { flex: 1, flexDirection: "column", backgroundColor: "#17122B" }
-    : { flex: 1, flexDirection: "row", backgroundColor: "#17122B", padding: 12, gap: 12 };
+    ? { flex: 1, backgroundColor: "#17122B" }
+    : { flex: 1, backgroundColor: "#17122B", padding: 12 };
+
+  const columns = gridColumnCount(totalPeople, isMobile);
+  const gridGap = 8;
+  const gridPadding = 12;
+  const mainAreaWidth = isMobile ? windowSize.width : windowSize.width - 24;
+  const tileWidth = (mainAreaWidth - gridPadding * 2 - gridGap * (columns - 1)) / columns;
 
   function attachScreenShareVideo(el) {
     if (!el) {
@@ -605,73 +676,25 @@ export default function MeetingRoom(props) {
         )}
 
         {!anyScreenShare && (
-          <View style={styles.myTile}>
-            {cameraOn ? (
-              <video
-                ref={localVideoRef}
-                autoPlay
-                playsInline
-                muted
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                  borderRadius: 14,
-                  display: "block",
-                  transform: "scaleX(-1)",
-                }}
-              />
-            ) : (
-              <View style={[styles.tileFill, styles.center, { backgroundColor: "#3A2D6B", borderRadius: 14 }]}>
-                <View style={styles.bigAvatar}>
-                  <Text style={styles.bigAvatarText}>{initials(myName)}</Text>
-                </View>
-              </View>
-            )}
-          </View>
-        )}
-
-        {handRaised && (
-          <View style={[styles.handBadge, { zIndex: 2 }]}>
-            <Text style={styles.handBadgeMainText}>✋</Text>
-          </View>
-        )}
-        <View style={[styles.nameTag, { zIndex: 2 }]}>
-          <Text style={styles.nameTagText}>{myName} (you)</Text>
-        </View>
-        <View style={[styles.titleBox, { zIndex: 2 }]}>
-          <Text style={styles.titleText}>{meetingCode}</Text>
-          <Text style={styles.titleSub}>{totalPeople} in room</Text>
-        </View>
-
-        {isMobile && peers.length > 0 && (
-          <ScrollView
-            horizontal
-            style={[styles.mobilePeerRow, { zIndex: 3 }]}
-            contentContainerStyle={{ gap: 8, paddingHorizontal: 12 }}
-          >
+          <View style={styles.grid}>
+            <View style={{ width: tileWidth, aspectRatio: 4 / 3 }}>
+              <SelfTile videoRef={localVideoRef} cameraOn={cameraOn} name={myName} handRaised={handRaised} />
+            </View>
             {peers.map(function (peer) {
               return (
-                <View key={peer.socketId} style={styles.mobilePeerTile}>
+                <View key={peer.socketId} style={{ width: tileWidth, aspectRatio: 4 / 3 }}>
                   <PeerTile peer={peer} />
                 </View>
               );
             })}
-          </ScrollView>
+          </View>
         )}
-      </View>
 
-      {!isMobile && peers.length > 0 && (
-        <ScrollView style={styles.sideCol} contentContainerStyle={{ gap: 10 }}>
-          {peers.map(function (peer) {
-            return (
-              <View key={peer.socketId} style={styles.sideTile}>
-                <PeerTile peer={peer} />
-              </View>
-            );
-          })}
-        </ScrollView>
-      )}
+        <View style={[styles.titleBox, { zIndex: 2 }]}>
+          <Text style={styles.titleText}>{meetingCode}</Text>
+          <Text style={styles.titleSub}>{totalPeople} in room</Text>
+        </View>
+      </View>
 
       {chatOpen && (
         <View style={[styles.panel, isMobile && styles.panelMobile]}>
@@ -827,27 +850,20 @@ const styles = StyleSheet.create({
   mainArea: { flex: 1, borderRadius: 16, overflow: "hidden", backgroundColor: "#241B45", position: "relative" },
   mainAreaMobile: { flex: 1, borderRadius: 0 },
 
-  myTile: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
+  grid: {
+    flex: 1,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    justifyContent: "center",
+    alignContent: "center",
+    padding: 12,
+    gap: 8,
+  },
 
-  tileFill: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
-  center: { alignItems: "center", justifyContent: "center" },
-
-  bigAvatar: { width: 100, height: 100, borderRadius: 50, backgroundColor: COLORS.primary, alignItems: "center", justifyContent: "center" },
-  bigAvatarText: { color: "#fff", fontWeight: "800", fontSize: 36 },
-
-  handBadge: { position: "absolute", top: 12, right: 12, backgroundColor: "rgba(0,0,0,0.6)", borderRadius: 20, paddingHorizontal: 8, paddingVertical: 4 },
-  handBadgeMainText: { color: "#fff", fontSize: 18, fontWeight: "700" },
-  nameTag: { position: "absolute", left: 12, bottom: 16, backgroundColor: "rgba(0,0,0,0.55)", borderRadius: 7, paddingHorizontal: 10, paddingVertical: 4 },
-  nameTagText: { color: "#fff", fontSize: 13, fontWeight: "600" },
   titleBox: { position: "absolute", top: 14, left: 14, backgroundColor: "rgba(0,0,0,0.45)", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
   titleText: { color: "#fff", fontWeight: "700", fontSize: 14 },
   titleSub: { color: "rgba(255,255,255,0.75)", fontSize: 11 },
-
-  sideCol: { width: 190 },
-  sideTile: { width: "100%", aspectRatio: 1 },
-
-  mobilePeerRow: { position: "absolute", top: 12, left: 0, right: 0, height: 110, zIndex: 3 },
-  mobilePeerTile: { width: 100, height: 100 },
 
   panel: { position: "absolute", top: 0, right: 0, bottom: 0, width: 290, backgroundColor: "#1A1330", borderLeftWidth: 1, borderLeftColor: "#3A2D6B", padding: 14, paddingBottom: 90, zIndex: 25 },
   panelMobile: { left: 0, right: 0, width: "100%", top: "auto", height: "60%", borderLeftWidth: 0, borderTopWidth: 1, borderTopColor: "#3A2D6B", paddingBottom: 90 },
