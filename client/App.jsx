@@ -13,6 +13,7 @@ import ClassDetailScreen from "./screens/ClassDetailScreen";
 import MeetingRoom from "./screens/MeetingRoom";
 import SummaryScreen from "./screens/SummaryScreen";
 import DatabaseScreen from "./screens/DatabaseScreen";
+import NotebookScreen from "./screens/NotebookScreen";
 
 function AppShell() {
   const themeContext = useTheme();
@@ -89,6 +90,9 @@ function AppShell() {
           onOpenDatabase={function () {
             setScreen("database");
           }}
+          onOpenNotebook={function () {
+            setScreen("notebook");
+          }}
         />
       )}
 
@@ -116,6 +120,7 @@ function AppShell() {
       {screen === "summary" && (
         <SummaryScreen
           meetingCode={meetingCode}
+          userEmail={userEmail}
           onBack={function () {
             if (currentClassId) {
               setScreen("classDetail");
@@ -128,6 +133,15 @@ function AppShell() {
 
       {screen === "database" && (
         <DatabaseScreen
+          userEmail={userEmail}
+          onBack={function () {
+            setScreen("dashboard");
+          }}
+        />
+      )}
+
+      {screen === "notebook" && (
+        <NotebookScreen
           userEmail={userEmail}
           onBack={function () {
             setScreen("dashboard");

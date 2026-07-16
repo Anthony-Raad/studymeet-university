@@ -108,6 +108,7 @@ function AccountMenu(props) {
   const onClose = props.onClose;
   const userEmail = props.userEmail;
   const onOpenDatabase = props.onOpenDatabase;
+  const onOpenNotebook = props.onOpenNotebook;
   const onLogout = props.onLogout;
 
   const themeContext = useTheme();
@@ -122,6 +123,11 @@ function AccountMenu(props) {
   function handleDatabase() {
     onClose();
     onOpenDatabase();
+  }
+
+  function handleNotebook() {
+    onClose();
+    onOpenNotebook();
   }
 
   function handleLogout() {
@@ -156,6 +162,10 @@ function AccountMenu(props) {
               <Switch value={darkMode} onValueChange={toggleDarkMode} />
             </View>
 
+            <Pressable onPress={handleNotebook} style={[styles.loginButton, styles.fullWidth, { marginBottom: 10 }]}>
+              <Text style={styles.loginButtonText}>My Notebook</Text>
+            </Pressable>
+
             <Pressable onPress={handleDatabase} style={[styles.loginButton, styles.fullWidth, { marginBottom: 10 }]}>
               <Text style={styles.loginButtonText}>Database</Text>
             </Pressable>
@@ -175,6 +185,7 @@ export default function DashboardScreen(props) {
   const onLogout = props.onLogout;
   const onOpenClass = props.onOpenClass;
   const onOpenDatabase = props.onOpenDatabase;
+  const onOpenNotebook = props.onOpenNotebook;
 
   const themeContext = useTheme();
   const colors = themeContext.colors;
@@ -372,6 +383,7 @@ export default function DashboardScreen(props) {
         }}
         userEmail={userEmail}
         onOpenDatabase={onOpenDatabase}
+        onOpenNotebook={onOpenNotebook}
         onLogout={onLogout}
       />
     </View>

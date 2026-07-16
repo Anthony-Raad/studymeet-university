@@ -85,6 +85,18 @@ export async function initDb() {
     )
   `;
 
+  const createNotes = `
+    CREATE TABLE IF NOT EXISTS notes (
+      id           VARCHAR(10)  PRIMARY KEY,
+      email        VARCHAR(255) NOT NULL,
+      meeting_code VARCHAR(10),
+      title        VARCHAR(255) NOT NULL,
+      content      TEXT         NOT NULL,
+      created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (meeting_code) REFERENCES meetings(code) ON DELETE SET NULL
+    )
+  `;
+
   const allTableStatements = [
     createStudents,
     createUsers,
@@ -94,6 +106,7 @@ export async function initDb() {
     createAttendance,
     createResponses,
     createSummaries,
+    createNotes,
   ];
 
   for (const statement of allTableStatements) {

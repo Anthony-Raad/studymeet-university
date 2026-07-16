@@ -143,5 +143,30 @@ export default function getStyles(colors) {
     sessionAttended: { fontSize: 13, fontWeight: "700", color: "#27ae60", marginTop: 4 },
     sessionMissed: { fontSize: 13, fontWeight: "700", color: "#c0392b", marginTop: 4 },
     sessionEmail: { fontSize: 12, color: colors.muted, marginLeft: 10, marginTop: 2 },
+
+    chatBubble: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 12,
+      padding: 14,
+      marginTop: 12,
+    },
+    chatQuestionText: { fontSize: 14, fontWeight: "700", color: colors.text },
+    chatAnswerText: { fontSize: 14, lineHeight: 21, color: colors.muted, marginTop: 6 },
+    chatButtonsRow: { flexDirection: "row", justifyContent: "flex-end", alignItems: "center", marginTop: 10 },
+    savedLabel: { fontSize: 12, fontWeight: "700", color: "#27ae60" },
+
+    noteCard: {
+      width: "100%",
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 12,
+      padding: 16,
+      marginTop: 12,
+    },
+    noteTitle: { fontSize: 15, fontWeight: "700", color: colors.text },
+    noteMeta: { fontSize: 12, color: colors.muted, marginTop: 2 },
+    noteContent: { fontSize: 14, lineHeight: 20, color: colors.text, marginTop: 8 },
+    noteDeleteText: { color: "#FF3B30", fontWeight: "700", fontSize: 13 },
   });
 }

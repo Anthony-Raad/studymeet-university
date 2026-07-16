@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { View, Text, Pressable, ScrollView } from "react-native";
+import { View, Text, Pressable, TextInput, ScrollView } from "react-native";
 
 import { API_URL } from "../constants";
 import getStyles from "../styles";
@@ -7,6 +7,7 @@ import { useTheme } from "../ThemeContext";
 
 export default function SummaryScreen(props) {
   const meetingCode = props.meetingCode;
+  const userEmail = props.userEmail;
   const onBack = props.onBack;
 
   const themeContext = useTheme();
@@ -16,6 +17,12 @@ export default function SummaryScreen(props) {
   const [summary, setSummary] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const [chatMessages, setChatMessages] = useState([]);
+  const [nextChatId, setNextChatId] = useState(1);
+  const [chatInput, setChatInput] = useState("");
+  const [chatBusy, setChatBusy] = useState(false);
+  const [chatError, setChatError] = useState("");
 
   useEffect(
     function () {
@@ -80,6 +87,77 @@ export default function SummaryScreen(props) {
     return false;
   }
 
+  async function sendQuestion() {
+    const question = chatInput.trim();
+    if (!question) {
+      return;
+    }
+    setChatBusy(true);
+    setChatError("");
+
+    try {
+      const response = await fetch(API_URL + "/api/meetings/" + meetingCode + "/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: question }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        setChatError(data.error || "Could not get an answer.");
+        setChatBusy(false);
+        return;
+      }
+
+      const newMessage = {
+        id: nextChatId,
+        question: question,
+        answer: data.answer || "",
+        saved: false,
+      };
+
+      const updated = [];
+      for (const message of chatMessages) {
+        updated.push(message);
+      }
+      updated.push(newMessage);
+
+      setChatMessages(updated);
+      setNextChatId(nextChatId + 1);
+      setChatInput("");
+    } catch (err) {
+      setChatError("Could not reach the server.");
+    }
+
+    setChatBusy(false);
+  }
+
+  async function saveToNotebook(message) {
+    try {
+      await fetch(API_URL + "/api/notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: userEmail,
+          meetingCode: meetingCode,
+          title: message.question,
+          content: message.answer,
+        }),
+      });
+
+      const updated = [];
+      for (const existing of chatMessages) {
+        if (existing.id === message.id) {
+          updated.push({ id: existing.id, question: existing.question, answer: existing.answer, saved: true });
+        } else {
+          updated.push(existing);
+        }
+      }
+      setChatMessages(updated);
+    } catch (err) {
+    }
+  }
+
   return (
     <ScrollView style={styles.page} contentContainerStyle={styles.pageContent}>
       <View style={styles.topBar}>
@@ -121,6 +199,63 @@ export default function SummaryScreen(props) {
             );
           })}
       </View>
+
+      {!loading && !error && (
+        <View style={[styles.lobbyCard, { maxWidth: 680 }]}>
+          <Text style={styles.featureTitle}>Ask About This Summary</Text>
+          <Text style={[styles.featureText, { marginBottom: 10 }]}>
+            Ask a question and get an answer from AI based on this summary.
+          </Text>
+
+          {chatMessages.map(function (message) {
+            return (
+              <View key={message.id} style={styles.chatBubble}>
+                <Text style={styles.chatQuestionText}>{message.question}</Text>
+                <Text style={styles.chatAnswerText}>{message.answer}</Text>
+                <View style={styles.chatButtonsRow}>
+                  {message.saved ? (
+                    <Text style={styles.savedLabel}>Saved to Notebook</Text>
+                  ) : (
+                    <Pressable
+                      onPress={function () {
+                        saveToNotebook(message);
+                      }}
+                      style={styles.SummaryBtn}
+                    >
+                      <Text style={styles.SummaryBtnText}>Save to Notebook</Text>
+                    </Pressable>
+                  )}
+                </View>
+              </View>
+            );
+          })}
+
+          <View
+            style={[
+              styles.joinRow,
+              { justifyContent: "flex-start", marginTop: chatMessages.length > 0 ? 14 : 0 },
+            ]}
+          >
+            <TextInput
+              value={chatInput}
+              onChangeText={setChatInput}
+              placeholder="Ask a question..."
+              placeholderTextColor={colors.muted}
+              style={[styles.input, { flex: 1 }]}
+            />
+            <Pressable
+              onPress={sendQuestion}
+              disabled={chatBusy || !chatInput.trim()}
+              style={function (state) {
+                return [styles.joinButton, state.pressed && styles.joinButtonPressed];
+              }}
+            >
+              <Text style={styles.joinButtonText}>{chatBusy ? "..." : "Ask"}</Text>
+            </Pressable>
+          </View>
+          {chatError.length > 0 && <Text style={[styles.status, { color: colors.muted }]}>{chatError}</Text>}
+        </View>
+      )}
 
       <Pressable
         onPress={onBack}
