@@ -168,5 +168,34 @@ export default function getStyles(colors) {
     noteMeta: { fontSize: 12, color: colors.muted, marginTop: 2 },
     noteContent: { fontSize: 14, lineHeight: 20, color: colors.text, marginTop: 8 },
     noteDeleteText: { color: "#FF3B30", fontWeight: "700", fontSize: 13 },
+
+    quizOption: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      marginTop: 8,
+    },
+    quizOptionCorrect: {
+      borderWidth: 1,
+      borderColor: "#27ae60",
+      backgroundColor: hexToRgba("#27ae60", 0.12),
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      marginTop: 8,
+    },
+    quizOptionWrong: {
+      borderWidth: 1,
+      borderColor: "#c0392b",
+      backgroundColor: hexToRgba("#c0392b", 0.12),
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      marginTop: 8,
+    },
+    quizOptionText: { fontSize: 14, color: colors.text },
+    quizWrongLabel: { fontSize: 12, fontWeight: "700", color: "#c0392b" },
   });
 }

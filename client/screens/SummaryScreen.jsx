@@ -24,6 +24,12 @@ export default function SummaryScreen(props) {
   const [chatBusy, setChatBusy] = useState(false);
   const [chatError, setChatError] = useState("");
 
+  const [quizQuestions, setQuizQuestions] = useState([]);
+  const [quizLoading, setQuizLoading] = useState(false);
+  const [quizError, setQuizError] = useState("");
+  const [quizAnswers, setQuizAnswers] = useState({});
+  const [quizSavedIndexes, setQuizSavedIndexes] = useState([]);
+
   useEffect(
     function () {
       let cancelled = false;
@@ -158,6 +164,66 @@ export default function SummaryScreen(props) {
     }
   }
 
+  async function loadQuiz() {
+    setQuizLoading(true);
+    setQuizError("");
+    setQuizAnswers({});
+    setQuizSavedIndexes([]);
+
+    try {
+      const response = await fetch(API_URL + "/api/meetings/" + meetingCode + "/quiz", {
+        method: "POST",
+      });
+      const data = await response.json();
+
+      if (data.error) {
+        setQuizError(data.error);
+      }
+      setQuizQuestions(data.questions || []);
+    } catch (err) {
+      setQuizError("Could not reach the server.");
+    }
+
+    setQuizLoading(false);
+  }
+
+  function pickAnswer(questionIndex, letter) {
+    const updated = Object.assign({}, quizAnswers);
+    updated[questionIndex] = letter;
+    setQuizAnswers(updated);
+  }
+
+  async function saveQuestionToNotebook(questionIndex) {
+    const question = quizQuestions[questionIndex];
+    let correctText = "";
+    for (const option of question.options) {
+      if (option.letter === question.correct) {
+        correctText = option.text;
+      }
+    }
+
+    try {
+      await fetch(API_URL + "/api/notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: userEmail,
+          meetingCode: meetingCode,
+          title: question.question,
+          content: "Correct answer: " + correctText,
+        }),
+      });
+
+      const updated = [];
+      for (const index of quizSavedIndexes) {
+        updated.push(index);
+      }
+      updated.push(questionIndex);
+      setQuizSavedIndexes(updated);
+    } catch (err) {
+    }
+  }
+
   return (
     <ScrollView style={styles.page} contentContainerStyle={styles.pageContent}>
       <View style={styles.topBar}>
@@ -254,6 +320,83 @@ export default function SummaryScreen(props) {
             </Pressable>
           </View>
           {chatError.length > 0 && <Text style={[styles.status, { color: colors.muted }]}>{chatError}</Text>}
+        </View>
+      )}
+
+      {!loading && !error && (
+        <View style={[styles.lobbyCard, { maxWidth: 680 }]}>
+          <Text style={styles.featureTitle}>Take a Quiz</Text>
+          <Text style={[styles.featureText, { marginBottom: 10 }]}>
+            Test yourself on what this class covered.
+          </Text>
+
+          {quizQuestions.length === 0 && !quizLoading && (
+            <Pressable onPress={loadQuiz} style={[styles.joinButton, styles.fullWidth]}>
+              <Text style={styles.joinButtonText}>Take a Quiz</Text>
+            </Pressable>
+          )}
+
+          {quizLoading && <Text style={styles.featureText}>Building your quiz...</Text>}
+          {quizError.length > 0 && <Text style={[styles.status, { color: colors.muted }]}>{quizError}</Text>}
+
+          {quizQuestions.map(function (question, index) {
+            const pickedLetter = quizAnswers[index];
+            const answered = Boolean(pickedLetter);
+            const isCorrect = pickedLetter === question.correct;
+            const alreadySaved = quizSavedIndexes.indexOf(index) > -1;
+
+            return (
+              <View key={index} style={styles.chatBubble}>
+                <Text style={styles.chatQuestionText}>
+                  {index + 1}. {question.question}
+                </Text>
+
+                {question.options.map(function (option) {
+                  let optionStyle = styles.quizOption;
+                  if (answered && option.letter === question.correct) {
+                    optionStyle = styles.quizOptionCorrect;
+                  } else if (answered && option.letter === pickedLetter) {
+                    optionStyle = styles.quizOptionWrong;
+                  }
+
+                  return (
+                    <Pressable
+                      key={option.letter}
+                      onPress={function () {
+                        if (!answered) {
+                          pickAnswer(index, option.letter);
+                        }
+                      }}
+                      style={optionStyle}
+                    >
+                      <Text style={styles.quizOptionText}>
+                        {option.letter}. {option.text}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+
+                {answered && (
+                  <View style={styles.chatButtonsRow}>
+                    <Text style={isCorrect ? styles.savedLabel : styles.quizWrongLabel}>
+                      {isCorrect ? "Correct!" : "Not quite"}
+                    </Text>
+                    {!isCorrect && !alreadySaved && (
+                      <Pressable
+                        onPress={function () {
+                          saveQuestionToNotebook(index);
+                        }}
+                        style={styles.SummaryBtn}
+                      >
+                        <Text style={styles.SummaryBtnText}>Save to Notebook</Text>
+                      </Pressable>
+                    )}
+                    {!isCorrect && alreadySaved && <Text style={styles.savedLabel}>Saved to Notebook</Text>}
+                  </View>
+                )}
+              </View>
+            );
+          })}
         </View>
       )}
 
